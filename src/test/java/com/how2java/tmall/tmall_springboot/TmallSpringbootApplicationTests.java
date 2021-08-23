@@ -11,6 +11,8 @@ public class TmallSpringbootApplicationTests {
 
 	@Test
 	public void contextLoads() {
+
+		System.out.println("holle world!");
 	}
 
 }

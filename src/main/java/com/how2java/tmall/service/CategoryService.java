@@ -18,18 +18,24 @@ public class CategoryService {
 	@Autowired CategoryDAO categoryDAO;
 
 
+	//分页
 	public Page4Navigator<Category> list(int start, int size, int navigatePages) {
+		//Pageable 是 Spring 封装的分页实现类，使用的时候需要传入页数start、每页条数size和排序规则sort。
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		Pageable pageable = new PageRequest(start, size,sort);
+		//Page<User> findALL(Pageable pageable); 在查询的方法中，需要传入参数Pageable
 		Page pageFromJPA =categoryDAO.findAll(pageable);
 
 		return new Page4Navigator<>(pageFromJPA,navigatePages);
 	}
+
+	//查询
 	public List<Category> list() {
     	Sort sort = new Sort(Sort.Direction.DESC, "id");
 		return categoryDAO.findAll(sort);
 	}
 
+	//添加
 	public void add(Category bean) {
 		categoryDAO.save(bean);
 	}
@@ -42,6 +48,7 @@ public class CategoryService {
 		Category c= categoryDAO.findOne(id);
 		return c;
 	}
+
 	public void update(Category bean) {
 		categoryDAO.save(bean);
 	}
