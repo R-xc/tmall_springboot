@@ -6,6 +6,7 @@ import com.how2java.tmall.util.Page4Navigator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -14,7 +15,7 @@ public class PropertyController {
     PropertyService propertyService;
 
     @GetMapping("/categories/{cid}/properties")
-    public Page4Navigator<Property> getPage(@PathVariable("cid")int cid,
+    public Page4Navigator<Property> list(@PathVariable("cid")int cid,
                                   @RequestParam(value = "start", defaultValue = "0") int start,
                                   @RequestParam(value = "size", defaultValue = "5") int size)
             throws Exception{
@@ -23,7 +24,7 @@ public class PropertyController {
     }
 
 
-    @PostMapping("/property")
+    @PostMapping("/properties")
     public Property add(@RequestBody Property bean){
       propertyService.add(bean);
       return bean;
@@ -31,6 +32,7 @@ public class PropertyController {
 
     @GetMapping("/properties/{id}")
     public Property get(@PathVariable("id") int id) throws Exception {
+
         Property bean= propertyService.get(id);
 
         return bean;
