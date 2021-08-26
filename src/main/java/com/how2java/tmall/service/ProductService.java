@@ -1,7 +1,7 @@
 package com.how2java.tmall.service;
 
 import com.how2java.tmall.dao.ProductDAO;
-import com.how2java.tmall.pojo.Category;
+
 import com.how2java.tmall.pojo.Product;
 import com.how2java.tmall.util.Page4Navigator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +18,7 @@ public class ProductService {
     @Autowired
     CategoryService categoryService;
 
+
     public void add(Product bean){
         productDAO.save(bean);
     }
@@ -29,8 +30,10 @@ public class ProductService {
     public void update(Product bean){
         productDAO.save(bean);
     }
+
     public Product get(int id){
-        return productDAO.findOne(id);
+        Product product = productDAO.findOne(id);
+        return product;
     }
 
     public Page4Navigator list(int cid,int start,int size,int navigatePages){
@@ -40,6 +43,8 @@ public class ProductService {
         Page page = productDAO.findByCategory(categoryService.get(cid), pageable);
 
         Page4Navigator page4Navigator = new Page4Navigator(page,navigatePages);
+
         return page4Navigator;
     }
+
 }

@@ -30,4 +30,7 @@ public class Product {
     private Category category;
     //日期
     private Date createDAte;
+
+    @Transient
+    private ProductImage firstProductImage;
 }

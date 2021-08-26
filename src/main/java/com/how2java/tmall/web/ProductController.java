@@ -1,6 +1,7 @@
 package com.how2java.tmall.web;
 
 import com.how2java.tmall.pojo.Product;
+import com.how2java.tmall.service.ProductImageService;
 import com.how2java.tmall.service.ProductService;
 import com.how2java.tmall.util.Page4Navigator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     @Autowired
     ProductService productService;
+    @Autowired
+    ProductImageService productImageService;
 
     @PostMapping("/product")
     public Product add(@RequestBody Product bean) throws Exception{
@@ -29,7 +32,9 @@ public class ProductController {
                                            @RequestParam(name = "size",defaultValue = "5") int size
 
     )throws Exception{
-        return productService.list(cid,start,size,5);
+        Page4Navigator page = productService.list(cid, start, size, 5);
+        productImageService.setFirstProdutImages(page.getContent());
+        return page;
     }
 
     @DeleteMapping("/product/{id}")
