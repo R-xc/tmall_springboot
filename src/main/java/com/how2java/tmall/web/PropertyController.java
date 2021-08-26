@@ -39,7 +39,7 @@ public class PropertyController {
     }
 
     @PutMapping("/properties")
-    public Object update(@RequestBody Property bean) throws Exception {
+    public Property update(@RequestBody Property bean) throws Exception {
         propertyService.update(bean);
         return bean;
     }
