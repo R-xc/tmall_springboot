@@ -1,14 +1,18 @@
 package com.how2java.tmall.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
 
 import javax.persistence.*;
 
-//@Data
-
+@Data
 @Entity
 @Table(name = "property")
 @JsonIgnoreProperties({ "handler","hibernateLazyInitializer" })
+
+/**
+ * 属性
+ */
 public class Property {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,27 +26,4 @@ public class Property {
     @JoinColumn(name = "cid")
     private Category category;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public void setCategory(Category category) {
-        this.category = category;
-    }
 }

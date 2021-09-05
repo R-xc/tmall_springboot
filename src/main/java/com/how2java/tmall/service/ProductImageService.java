@@ -2,6 +2,7 @@ package com.how2java.tmall.service;
 
 import com.how2java.tmall.dao.ProductDAO;
 import com.how2java.tmall.dao.ProductImageDAO;
+import com.how2java.tmall.pojo.OrderItem;
 import com.how2java.tmall.pojo.Product;
 import com.how2java.tmall.pojo.ProductImage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,16 +39,23 @@ public class ProductImageService {
     public List<ProductImage> listDetailProductImages(Product product) {
         return productImageDAO.findByProductAndTypeOrderByIdDesc(product, type_detail);
     }
+
     public void setFirstProdutImage(Product product) {
         List<ProductImage> singleImages = listSingleProductImages(product);
         if(!singleImages.isEmpty())
             product.setFirstProductImage(singleImages.get(0));
         else
-            product.setFirstProductImage(new ProductImage()); //这样做是考虑到产品还没有来得及设置图片，但是在订单后台管理里查看订单项的对应产品图片。
-
+            //这样做是考虑到产品还没有来得及设置图片，但是在订单后台管理里查看订单项的对应产品图片。
+            product.setFirstProductImage(new ProductImage());
     }
     public void setFirstProdutImages(List<Product> products) {
         for (Product product : products)
             setFirstProdutImage(product);
+    }
+
+    public void setFirstProdutImagesOnOrderItems(List<OrderItem> ois){
+        for (OrderItem oi:ois){
+            setFirstProdutImage(oi.getProduct());
+        }
     }
 }

@@ -69,6 +69,7 @@ public class ProductImageController {
         }
         else{
             folder +="productDetail";
+
         }
         //通过将给定的路径名字符串转换为抽象路径名来创建新的 File实例。
         File imageFolder= new File(request.getServletContext().getRealPath(folder));
@@ -88,18 +89,20 @@ public class ProductImageController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-            //转换图片大小
-        if(ProductImageService.type_single.equals(bean.getType())){
-            String imageFolder_small= request.getServletContext().getRealPath("img/productSingle_small");
-            String imageFolder_middle= request.getServletContext().getRealPath("img/productSingle_middle");
+         //转换图片大小
 
-            File f_small = new File(imageFolder_small, fileName);
-            File f_middle = new File(imageFolder_middle, fileName);
-            f_small.getParentFile().mkdirs();
-            f_middle.getParentFile().mkdirs();
-            ImageUtil.resizeImage(file, 56, 56, f_small);
-            ImageUtil.resizeImage(file, 217, 190, f_middle);
+        if(ProductImageService.type_single.equals(bean.getType())){
+                String imageFolder_small= request.getServletContext().getRealPath("img/productSingle_small");
+                String imageFolder_middle= request.getServletContext().getRealPath("img/productSingle_middle");
+
+                File f_small = new File(imageFolder_small, fileName);
+                File f_middle = new File(imageFolder_middle, fileName);
+                f_small.getParentFile().mkdirs();
+                f_middle.getParentFile().mkdirs();
+                ImageUtil.resizeImage(file, 56, 56, f_small);
+                ImageUtil.resizeImage(file, 217, 190, f_middle);
         }
+
 
         return bean;
     }

@@ -1,6 +1,7 @@
 package com.how2java.tmall.web;
 
 import com.how2java.tmall.pojo.Category;
+import com.how2java.tmall.pojo.Product;
 import com.how2java.tmall.service.CategoryService;
 import com.how2java.tmall.util.ImageUtil;
 import com.how2java.tmall.util.Page4Navigator;
@@ -13,7 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
- 
+import java.util.List;
+
 @RestController
 public class CategoryController {
 	@Autowired CategoryService categoryService;
@@ -84,6 +86,30 @@ public class CategoryController {
 			saveOrUpdateImageFile(bean, image, request);
 		}
 		return bean;
+	}
+
+	public void removeCategoryFromProduct(List<Category> cs) {
+		for (Category category : cs) {
+			removeCategoryFromProduct(category);
+		}
+	}
+
+	public void removeCategoryFromProduct(Category category) {
+		List<Product> products =category.getProducts();
+		if(null!=products) {
+			for (Product product : products) {
+				product.setCategory(null);
+			}
+		}
+
+		List<List<Product>> productsByRow =category.getProductsByRow();
+		if(null!=productsByRow) {
+			for (List<Product> ps : productsByRow) {
+				for (Product p: ps) {
+					p.setCategory(null);
+				}
+			}
+		}
 	}
 
 }
