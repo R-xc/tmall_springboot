@@ -1,4 +1,5 @@
 package com.how2java.tmall.pojo;
+import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,7 +17,7 @@ import lombok.Data;
 @Entity
 @Table(name = "review")
 @JsonIgnoreProperties({ "handler","hibernateLazyInitializer" })
-public class Review {
+public class Review implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

@@ -1,10 +1,11 @@
 package com.how2java.tmall.util;
  
+import java.io.Serializable;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
  
-public class Page4Navigator<T> {
+public class Page4Navigator<T> implements Serializable {
     Page<T> pageFromJPA;
     int navigatePages;
      

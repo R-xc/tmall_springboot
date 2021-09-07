@@ -80,32 +80,53 @@ public class ProductImageController {
         if(!file.getParentFile().exists())
             file.getParentFile().mkdirs();
         try {
+
             //将前端传来的文件保存到file文件中
             image.transferTo(file);
+            //转换图片大小
+            changeJpg(type,request,fileName,file);
             //将图片转为jpg格式
             BufferedImage img = ImageUtil.change2jpg(file);
             //使用支持给定格式的任意 ImageWriter写入图像到 File 。
             ImageIO.write(img, "jpg", file);
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+
          //转换图片大小
 
-        if(ProductImageService.type_single.equals(bean.getType())){
-                String imageFolder_small= request.getServletContext().getRealPath("img/productSingle_small");
-                String imageFolder_middle= request.getServletContext().getRealPath("img/productSingle_middle");
-
-                File f_small = new File(imageFolder_small, fileName);
-                File f_middle = new File(imageFolder_middle, fileName);
-                f_small.getParentFile().mkdirs();
-                f_middle.getParentFile().mkdirs();
-                ImageUtil.resizeImage(file, 56, 56, f_small);
-                ImageUtil.resizeImage(file, 217, 190, f_middle);
-        }
+//        if(bean.getType().equals("single")){
+//                String imageFolder_small= request.getServletContext().getRealPath("img/productSingle_small");
+//                String imageFolder_middle= request.getServletContext().getRealPath("img/productSingle_middle");
+//
+//                File f_small = new File(imageFolder_small, fileName);
+//                File f_middle = new File(imageFolder_middle, fileName);
+//                f_small.getParentFile().mkdirs();
+//                f_middle.getParentFile().mkdirs();
+//                ImageUtil.resizeImage(file, 56, 56, f_small);
+//                ImageUtil.resizeImage(file, 217, 190, f_middle);
+//        }
 
 
         return bean;
     }
+
+    private void changeJpg(String type,HttpServletRequest request,String fileName,File file){
+        if (type.equals("single")){
+            String imageFolder_small= request.getServletContext().getRealPath("img/productSingle_small");
+            String imageFolder_middle= request.getServletContext().getRealPath("img/productSingle_middle");
+
+            File f_small = new File(imageFolder_small, fileName);
+            File f_middle = new File(imageFolder_middle, fileName);
+            f_small.getParentFile().mkdirs();
+            f_middle.getParentFile().mkdirs();
+            ImageUtil.resizeImage(file, 56, 56, f_small);
+            ImageUtil.resizeImage(file, 217, 190, f_middle);
+        }
+    }
+
     @DeleteMapping("/productImages/{id}")
     public String delete(@PathVariable("id") int id, HttpServletRequest request)  throws Exception {
         ProductImage bean = productImageService.get(id);

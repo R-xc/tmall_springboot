@@ -1,11 +1,18 @@
 package com.how2java.tmall.web;
 
+import ch.qos.logback.core.net.ssl.SecureRandomFactoryBean;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.how2java.tmall.pojo.*;
 import com.how2java.tmall.service.*;
 import com.how2java.tmall.util.Result;
 
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.crypto.SecureRandomNumberGenerator;
+import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.HtmlUtils;
@@ -38,7 +45,7 @@ public class ForeRESTController {
     //2. 为这些分类填充产品集合
     //3. 为这些分类填充推荐产品集合
     //4. 移除产品里的分类信息，以免出现重复递归
-    public Object home(){
+    public Object home() {
         List<Category> categories = categoryService.list();
         productService.fill(categories);
         productService.fillByRow(categories);
@@ -47,16 +54,23 @@ public class ForeRESTController {
     }
 
     @PostMapping("/foreregister")
-    public Result register(@RequestBody User user){
+    public Result register(@RequestBody User user) {
         String name = user.getName();
+        String password = user.getPassWord();
         //通过HtmlUtils.htmlEscape(name)，把账号里的特殊符号进行转义,防止恶意注册
         name = HtmlUtils.htmlEscape(name);
+
         user.setName(name);
 
-        if (userService.isExist(name)){
+        if (userService.isExist(name)) {
             return Result.fail("存在同名用户");
         }
-
+        String salt = new SecureRandomNumberGenerator().nextBytes().toString();
+        String algorithmName = "md5";
+        int times = 2;
+        String encodedPassword = new SimpleHash(algorithmName, password, salt, times).toString();
+        user.setSalt(salt);
+        user.setPassWord(encodedPassword);
         userService.add(user);
 
         return Result.success();
@@ -64,20 +78,35 @@ public class ForeRESTController {
     }
 
     @PostMapping("/forelogin")
-    public Object login(@RequestBody User user, HttpSession session){
+    public Object login(@RequestBody User user, HttpSession session) {
         //通过HtmlUtils.htmlEscape(name)，注册时转义了特殊符号
-        user.setName(HtmlUtils.htmlEscape(user.getName()));
-        User bean = userService.login(user.getName(), user.getPassWord());
-        if (bean ==null){
-            return Result.fail("用户名或密码错误");
-        }
+        String name = user.getName();
+        name = HtmlUtils.htmlEscape(name);
 
-            session.setAttribute("user", bean);
+        Subject subject = SecurityUtils.getSubject();
+        UsernamePasswordToken token = new UsernamePasswordToken(name, user.getPassWord());
+        try {
+            subject.login(token);
+            User bean = userService.getByName(name);
+            subject.getSession().setAttribute("user", bean);
             return Result.success();
+        } catch (AuthenticationException e) {
+            String message = "账号密码错误";
+            return Result.fail(message);
+        }
+//        User bean = userService.login(user.getName(), user.getPassWord());
+//        if (bean ==null){
+//            return Result.fail("用户名或密码错误");
+//            return Result.fail("用户名或密码错误");
+//        }
+//
+//            session.setAttribute("user", bean);
+//            return Result.success();
     }
 
+
     @GetMapping("/foreproduct/{pid}")
-    public Object product(@PathVariable int pid){
+    public Object product(@PathVariable int pid) {
 
         Product product = productService.get(pid);
 
@@ -93,7 +122,7 @@ public class ForeRESTController {
         productService.setSaleAndReviewNumber(product);
         productImageService.setFirstProdutImage(product);
 
-        Map<String,Object> map= new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put("product", product);
         map.put("pvs", pvs);
         map.put("reviews", reviews);
@@ -104,8 +133,11 @@ public class ForeRESTController {
     }
 
     @GetMapping("forecheckLogin")
-    public Result checklogin(HttpSession session){
-        if (session.getAttribute("user")==null){
+    public Result checklogin(HttpSession session) {
+
+        Subject subject = SecurityUtils.getSubject();
+
+        if (!subject.isAuthenticated()) {
             return Result.fail("未登录");
         }
         return Result.success();
@@ -113,7 +145,7 @@ public class ForeRESTController {
     }
 
     @GetMapping("forecategory/{cid}")
-    public Category categoryPage(@PathVariable int cid){
+    public Category categoryPage(@PathVariable int cid) {
 
         Category category = categoryService.get(cid);
         List<Product> products = productService.listByCategory(category);
@@ -122,27 +154,31 @@ public class ForeRESTController {
         categoryService.removeCategoryFromProduct(category);
         return category;
     }
-//搜索
+
+    //搜索
     @PostMapping("foresearch")
-    public Object search(String keyword){
-        if(null==keyword)
+    public Object search(String keyword) {
+        if (null == keyword)
             keyword = "";
-        List<Product> ps= productService.search(keyword,0,20);
+        List<Product> ps = productService.search(keyword, 0, 20);
         productImageService.setFirstProdutImages(ps);
         productService.setSaleAndReviewNumber(ps);
         return ps;
     }
+
     //点击购买
     @GetMapping("forebuyone")
     public int buyone(int pid, int num, HttpSession session) {
-        return buyoneAndAddCart(pid,num,session);
+        return buyoneAndAddCart(pid, num, session);
     }
+
     //加入购物车
     @GetMapping("foreaddCart")
     public Object addCart(int pid, int num, HttpSession session) {
-        buyoneAndAddCart(pid,num,session);
+        buyoneAndAddCart(pid, num, session);
         return Result.success();
     }
+
     //    返回当前订单项id
     private int buyoneAndAddCart(int pid, int num, HttpSession session) {
         Product product = productService.get(pid);
@@ -151,17 +187,17 @@ public class ForeRESTController {
         List<OrderItem> orderItems = orderItemService.listByUser(user);
         //该用户是否存在该商品的订单项
         boolean isOrderItems = false;
-        for (OrderItem o:orderItems){
-            if (o.getProduct().getId() == product.getId()){
+        for (OrderItem o : orderItems) {
+            if (o.getProduct().getId() == product.getId()) {
                 //订单项中商品数量增加，并更新数据
-                o.setNumber(o.getNumber()+num);
+                o.setNumber(o.getNumber() + num);
                 orderItemService.update(o);
                 orderItemID = o.getId();
                 isOrderItems = true;
                 break;
             }
         }
-        if (!isOrderItems){
+        if (!isOrderItems) {
             OrderItem orderItem = new OrderItem();
             orderItem.setUser(user);
             orderItem.setNumber(num);
@@ -174,22 +210,22 @@ public class ForeRESTController {
 
     //订单项页面
     @GetMapping("forebuy")
-    public Result buy(int[] oiid, HttpSession session){
+    public Result buy(int[] oiid, HttpSession session) {
 
         float totalPrice = 0;
         ArrayList<OrderItem> orderItems = new ArrayList<>();
 
-        for (int oi:oiid){
+        for (int oi : oiid) {
             OrderItem orderItem = orderItemService.get(oi);
             orderItems.add(orderItem);
-            totalPrice += orderItem.getProduct().getPromotePrice()*orderItem.getNumber();
+            totalPrice += orderItem.getProduct().getPromotePrice() * orderItem.getNumber();
         }
         productImageService.setFirstProdutImagesOnOrderItems(orderItems);
 
-        session.setAttribute("ois",orderItems);
+        session.setAttribute("ois", orderItems);
         HashMap<String, Object> map = new HashMap<>();
-        map.put("orderItems",orderItems);
-        map.put("total",totalPrice);
+        map.put("orderItems", orderItems);
+        map.put("total", totalPrice);
 
         return Result.success(map);
 
@@ -197,7 +233,7 @@ public class ForeRESTController {
 
     //购物车
     @GetMapping("forecart")
-    public List<OrderItem> cart(HttpSession session){
+    public List<OrderItem> cart(HttpSession session) {
         User user = (User) session.getAttribute("user");
         List<OrderItem> ois = orderItemService.listByUser(user);
         productImageService.setFirstProdutImagesOnOrderItems(ois);
@@ -205,12 +241,12 @@ public class ForeRESTController {
     }
 
     @GetMapping("forechangeOrderItem")
-    public Result changeOrderItem(int pid ,int num,HttpSession session){
+    public Result changeOrderItem(int pid, int num, HttpSession session) {
         User user = (User) session.getAttribute("user");
-        if (user!=null){
+        if (user != null) {
             List<OrderItem> orderItems = orderItemService.listByUser(user);
-            for (OrderItem oi:orderItems){
-                if (oi.getProduct().getId()==pid){
+            for (OrderItem oi : orderItems) {
+                if (oi.getProduct().getId() == pid) {
                     oi.setNumber(num);
                     orderItemService.update(oi);
                     break;
@@ -220,10 +256,11 @@ public class ForeRESTController {
         }
         return Result.fail("未登录");
     }
+
     @GetMapping("foredeleteOrderItem")
-    public Object deleteOrderItem(HttpSession session,int oiid){
-        User user =(User)  session.getAttribute("user");
-        if(null==user){
+    public Object deleteOrderItem(HttpSession session, int oiid) {
+        User user = (User) session.getAttribute("user");
+        if (null == user) {
             return Result.fail("未登录");
         }
         orderItemService.delete(oiid);
@@ -232,13 +269,13 @@ public class ForeRESTController {
 
 
     @PostMapping("/forecreateOrder")
-    public Result createOrder(@RequestBody Order order,HttpSession session){
+    public Result createOrder(@RequestBody Order order, HttpSession session) {
 
         User user = (User) session.getAttribute("user");
         List<OrderItem> orderItems = (List<OrderItem>) session.getAttribute("ois");
 
         Date dateNow = DateUtil.date(System.currentTimeMillis());
-        String ordercode = DateUtil.format(dateNow,"yyyyMMddHHmmss")+RandomUtil.randomNumbers(4);
+        String ordercode = DateUtil.format(dateNow, "yyyyMMddHHmmss") + RandomUtil.randomNumbers(4);
 
         order.setOrderCode(ordercode);
         order.setCreateDate(DateUtil.parse(DateUtil.now()));
@@ -247,8 +284,8 @@ public class ForeRESTController {
 
         float total = orderService.add(order, orderItems);
         Map<String, Object> map = new HashMap<>();
-        map.put("total",total);
-        map.put("oid",order.getId());
+        map.put("total", total);
+        map.put("oid", order.getId());
 
         return Result.success(map);
     }
@@ -258,8 +295,8 @@ public class ForeRESTController {
 
         Order order = orderService.get(oid);
 
-        System.out.println( order.getStatus());
-        if (!order.getStatus().equals("waitPay")){
+        System.out.println(order.getStatus());
+        if (!order.getStatus().equals("waitPay")) {
             return Result.fail("订单状态错误");
         }
         order.setStatus(OrderService.waitDelivery);
@@ -269,9 +306,11 @@ public class ForeRESTController {
     }
 
     @GetMapping("forebought")
-    public Object list(HttpSession session){
+    public Object list(HttpSession session) {
         User user = (User) session.getAttribute("user");
-        if (user == null){return Result.fail("未登录");}
+        if (user == null) {
+            return Result.fail("未登录");
+        }
 
         List<Order> os = orderService.listByUserAndNotDeleted(user);
 
@@ -290,21 +329,62 @@ public class ForeRESTController {
         orderService.removeOrderFromOrderItem(o);
         return o;
     }
-//确认支付
+
+    //确认支付
     @GetMapping("foreorderConfirmed")
-    public Object orderConfirmed( int oid) {
+    public Object orderConfirmed(int oid) {
         Order o = orderService.get(oid);
         o.setStatus(OrderService.waitReview);
         o.setConfirmDate(new Date());
         orderService.update(o);
         return Result.success();
     }
-//删除订单（实为更改订单状态为删除）
+
+    //删除订单（实为更改订单状态为删除）
     @PutMapping("foredeleteOrder")
-    public Object deleteOrder(int oid){
+    public Object deleteOrder(int oid) {
         Order o = orderService.get(oid);
         o.setStatus(OrderService.delete);
         orderService.update(o);
         return Result.success();
     }
+
+    //评价
+    @GetMapping("forereview")
+    public Object review(int oid) {
+        Order o = orderService.get(oid);
+        orderItemService.fill(o);
+        orderService.removeOrderFromOrderItem(o);
+
+        Product p = o.getOrderItems().get(0).getProduct();
+        List<Review> reviews = reviewService.list(p);
+        productService.setSaleAndReviewNumber(p);
+        Map<String, Object> map = new HashMap<>();
+        map.put("p", p);
+        map.put("o", o);
+        map.put("reviews", reviews);
+
+        return Result.success(map);
+    }
+
+    @PostMapping("foredoreview")
+    public Object doreview( HttpSession session,int oid,int pid,String content) {
+        Order o = orderService.get(oid);
+        o.setStatus(OrderService.finish);
+        orderService.update(o);
+
+        Product p = productService.get(pid);
+        content = HtmlUtils.htmlEscape(content);
+
+        User user =(User)  session.getAttribute("user");
+        Review review = new Review();
+        review.setContent(content);
+        review.setProduct(p);
+        review.setCreateDate(new Date());
+        review.setUser(user);
+        reviewService.add(review);
+        return Result.success();
+    }
+
+
 }

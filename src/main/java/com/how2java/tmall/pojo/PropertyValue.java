@@ -12,11 +12,13 @@ import javax.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @Entity
 @Table(name = "propertyvalue")
 @JsonIgnoreProperties({ "handler","hibernateLazyInitializer" })
-public class PropertyValue {
+public class PropertyValue implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

@@ -4,8 +4,8 @@ import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
-import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -15,12 +15,14 @@ import java.util.List;
 /**
  * 分类
  */
-public class Category {
+public class Category implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) 
     @Column(name = "id")	
     private int id;
     private String name;
+
+
 
     @Transient
     private List<Product> products;

@@ -6,10 +6,12 @@ import com.how2java.tmall.service.CategoryService;
 import com.how2java.tmall.util.ImageUtil;
 import com.how2java.tmall.util.Page4Navigator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.persistence.Cacheable;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -28,8 +30,6 @@ public class CategoryController {
 		Page4Navigator<Category> page =categoryService.list(start, size, 5);  //5表示导航分页最多有5个，像 [1,2,3,4,5] 这样
 		return page;
 	}
-
-
 //HttpServletRequest对象代表客户端的请求，当客户端通过HTTP协议访问服务器时，
 // HTTP请求头中的所有信息都封装在这个对象中，通过这个对象提供的方法，可以获得客户端请求的所有信息。
 

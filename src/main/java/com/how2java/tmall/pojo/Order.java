@@ -5,6 +5,7 @@ import com.how2java.tmall.service.OrderService;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * 订单
  */
-public class Order {
+public class Order implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
