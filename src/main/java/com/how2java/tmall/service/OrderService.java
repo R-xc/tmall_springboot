@@ -5,8 +5,12 @@ import com.how2java.tmall.pojo.Order;
 import com.how2java.tmall.pojo.OrderItem;
 import com.how2java.tmall.pojo.User;
 import com.how2java.tmall.util.Page4Navigator;
+import com.how2java.tmall.util.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +23,7 @@ import javax.servlet.http.HttpSession;
 import java.util.List;
 
 @Service
+@CacheConfig(cacheNames = "Orders")
 public class OrderService {
 
     @Autowired
@@ -33,7 +38,7 @@ public class OrderService {
     public static final String finish = "finish";
     public static final String delete = "delete";
 
-
+    @Cacheable(key= "'page'+#p0+'-'+#p1")
     public Page4Navigator<Order> list(int start, int size, int navigatePages) {
 
         Sort sort = new Sort(Sort.Direction.ASC, "id");
@@ -56,19 +61,22 @@ public class OrderService {
             orderItem.setOrder(null);
         }
     }
-
+    @Cacheable(key = "#p0")
     public Order get(int oid) {
         return orderDAO.findOne(oid);
     }
 
+    @CacheEvict(allEntries = true)
     public void update(Order bean) {
         orderDAO.save(bean);
     }
 
+
     @Transactional(propagation= Propagation.REQUIRED,rollbackForClassName="Exception")
     public float add(Order order, List<OrderItem> ois) {
         float total = 0;
-        add(order);
+        OrderService orderService = SpringContextUtil.getBean(OrderService.class);
+        orderService.add(order);
         //故意抛出异常代码用来模拟当增加订单后出现异常，观察事务管理是否预期发生。
         if(false)
             throw new RuntimeException();
@@ -81,23 +89,27 @@ public class OrderService {
         return total;
     }
 
+    @CacheEvict(allEntries = true)
     public void add(Order order) {
         orderDAO.save(order);
     }
 
-
     //订单页面
+
     public List<Order> listByUserWithoutDelete(User user) {
-        List<Order> orders = listByUserAndNotDeleted(user);
+        OrderService orderService = SpringContextUtil.getBean(OrderService.class);
+        List<Order> orders = orderService.listByUserAndNotDeleted(user);
         orderItemService.fill(orders);
         return orders;
     }
 
+    @Cacheable(key = "#p0")
     public List<Order> listByUserAndNotDeleted(User user) {
         return orderDAO.findByUserAndStatusNotOrderByIdDesc(user, OrderService.delete);
     }
 
     //计算订单总金额
+    @Cacheable(key = "#p0")
     public void cacl(Order o) {
         List<OrderItem> orderItems = o.getOrderItems();
         float total = 0;
